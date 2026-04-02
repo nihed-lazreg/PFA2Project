@@ -1,7 +1,7 @@
 import numpy as np
 import os
 import json
-from siamese_encoder import SiameseEncoder
+from siamese_encoder import SiameseEncoderV2
 import time
 
 class BaseEmpreintes:
@@ -14,7 +14,7 @@ class BaseEmpreintes:
         self.base_path = base_path
         
         print("📥 Chargement de l'encodeur Siamese...")
-        self.encoder = SiameseEncoder()
+        self.encoder = SiameseEncoderV2()
         
         if not self.encoder.is_trained:
             print("❌ ERREUR : Encodeur non entraîné !")
@@ -88,14 +88,18 @@ class BaseEmpreintes:
         
         return True
     
-    def identifier(self, signature_path, top_k=3, seuil_distance=0.45):
+    def identifier(self, signature_path, top_k=3, seuil_distance=0.15):
         """
         Identifie à qui appartient une signature
+
+        Utilise la similarité cosinus entre les embeddings L2-normalisés.
+        La distance cosinus = 1 − similarité cosinus ∈ [0, 2] (0 = identique).
         
         Args:
             signature_path: Chemin vers la signature à identifier
             top_k: Nombre de prédictions à retourner
-            seuil_distance: Seuil de distance (plus bas = plus similaire)
+            seuil_distance: Seuil de distance cosinus pour l'acceptation.
+                            Plus bas = plus strict (default 0.15 ≈ ancien 0.45 L2).
         
         Returns:
             dict: Résultats de l'identification
@@ -115,14 +119,18 @@ class BaseEmpreintes:
         for client_id, data in self.clients.items():
             empreintes_client = data['empreintes']
             
-            # Calculer la distance avec chaque signature du client
-            distances = np.linalg.norm(empreintes_client - empreinte, axis=1)
+            # Cosine similarity = dot product for L2-normalized vectors
+            cos_sims = empreintes_client @ empreinte  # shape: (N,)
             
-            dist_min = float(np.min(distances))
-            dist_moy = float(np.mean(distances))
+            sim_max = float(np.max(cos_sims))
+            sim_moy = float(np.mean(cos_sims))
             
-            # Convertir en score de similarité (0-1, plus haut = plus similaire)
-            similarite = 1 / (1 + dist_min)
+            # Cosine distance: 0 = identical, 2 = opposite
+            dist_min = 1.0 - sim_max
+            dist_moy = 1.0 - sim_moy
+            
+            # Confidence percentage based on cosine similarity (0-100 %)
+            similarite = sim_max
             
             resultats.append({
                 'client_id': client_id,
@@ -132,13 +140,13 @@ class BaseEmpreintes:
                 'confiance_pct': similarite * 100
             })
         
-        # Trier par distance (plus petite = plus similaire)
+        # Trier par distance cosinus (plus petite = plus similaire)
         resultats.sort(key=lambda x: x['distance'])
         
         top = resultats[:top_k]
         best = top[0]
         
-        # Décision basée sur la distance
+        # Décision basée sur la distance cosinus
         if best['distance'] < seuil_distance:
             status = 'identifie'
         elif best['distance'] < seuil_distance * 1.5:

@@ -2,20 +2,20 @@ from base_empreintes import BaseEmpreintes
 import sys
 import os
 
-def tester_signature_avec_detection_fraude(signature_path, seuil_fraude=0.50):
+def tester_signature_avec_detection_fraude(signature_path, seuil_fraude=0.15):
     """
     Teste l'identification d'une signature AVEC détection de fraude
     
     Args:
         signature_path: Chemin vers la signature à identifier
-        seuil_fraude: Seuil de distance pour détecter une fraude
-                      Plus bas = plus strict
-                      Plus haut = plus permissif
+        seuil_fraude: Seuil de distance cosinus pour détecter une fraude.
+                      (distance cosinus = 1 − cosine_similarity ∈ [0, 2])
+                      Plus bas = plus strict.
     
     Seuils recommandés :
-        - 0.35 : Très strict (peu de faux positifs, plus de faux négatifs)
-        - 0.45 : Équilibré (recommandé)
-        - 0.60 : Permissif (moins de rejets, plus de risque)
+        - 0.10 : Très strict (peu de faux positifs, plus de faux négatifs)
+        - 0.15 : Équilibré (recommandé)
+        - 0.25 : Permissif (moins de rejets, plus de risque)
     """
     print("="*70)
     print("🔍 TEST D'IDENTIFICATION AVEC DÉTECTION DE FRAUDE")
@@ -273,20 +273,20 @@ if __name__ == "__main__":
         print("   python test_identification_with_fraud_detection.py data/real/original_1_5.png")
         print("")
         print("   # Test avec seuil personnalisé")
-        print("   python test_identification_with_fraud_detection.py data/real/signature_99_1.png 0.45")
+        print("   python test_identification_with_fraud_detection.py data/real/signature_99_1.png 0.15")
         print("")
         print("   # Test d'une fraude (si vous avez créé le fichier)")
         print("   python test_identification_with_fraud_detection.py data/fake/forge_1_1.png")
-        print("\n⚙️  Seuils de fraude :")
-        print("   • 0.35 : Très strict (sécurité maximale, plus de rejets)")
-        print("   • 0.45 : Équilibré (RECOMMANDÉ)")
-        print("   • 0.60 : Permissif (moins de rejets, plus de risque)")
+        print("\n⚙️  Seuils de fraude (distance cosinus, 0 = identique) :")
+        print("   • 0.10 : Très strict (sécurité maximale, plus de rejets)")
+        print("   • 0.15 : Équilibré (RECOMMANDÉ)")
+        print("   • 0.25 : Permissif (moins de rejets, plus de risque)")
         print("\n💡 Le seuil détermine à partir de quelle distance on considère")
         print("   qu'une signature ne correspond à aucun client de la base.")
         
         sys.exit(1)
     
     signature_path = sys.argv[1]
-    seuil = float(sys.argv[2]) if len(sys.argv) >= 3 else 0.45
+    seuil = float(sys.argv[2]) if len(sys.argv) >= 3 else 0.15
     
     tester_signature_avec_detection_fraude(signature_path, seuil_fraude=seuil)
