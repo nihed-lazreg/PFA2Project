@@ -44,8 +44,12 @@ def triplet_loss(margin=0.2):
 
     The loss function expects ``y_pred`` to be the **concatenation** of the
     three L2-normalized embeddings produced by the triplet model:
-    ``[emb_anchor || emb_positive || emb_negative]``.
-    ``y_true`` is ignored (pass a zeros array of shape ``(N, 1)``).
+    ``[emb_anchor || emb_positive || emb_negative]`` with shape
+    ``(batch_size, 3 * embedding_size)``.
+    ``y_true`` is **ignored**; pass a zeros array of shape ``(N, 1)``::
+
+        y_dummy = np.zeros((len(X_anchor), 1))
+        model.fit([X_anchor, X_positive, X_negative], y_dummy, ...)
 
     Args:
         margin: Minimum required gap between the positive and negative
@@ -145,8 +149,8 @@ class SiameseEncoderV2:
                 self.encoder.load_weights(model_path)
                 print("✅ Encodeur V2 chargé")
                 self.is_trained = True
-            except Exception:
-                print("🧠 Nouvel encodeur V2 créé")
+            except Exception as e:
+                print(f"🧠 Nouvel encodeur V2 créé (chargement échoué : {e})")
                 self.is_trained = False
         else:
             print("🧠 Nouvel encodeur V2 créé")
@@ -287,7 +291,8 @@ class SiameseEncoderV2:
             img = cv2.resize(img, (150, 150))
             img = img.astype('float32') / 255.0
             return img
-        except Exception:
+        except (cv2.error, OSError, ValueError) as e:
+            print(f"⚠️  Erreur de chargement ({image_path}): {e}")
             return None
 
     def encode(self, image_path):
@@ -339,18 +344,21 @@ class SiameseEncoderV2:
     def cosine_similarity(emb_a, emb_b):
         """Compute cosine similarity between two embeddings.
 
-        Since the encoder already L2-normalizes its output, this is simply
-        the dot product.  A value of ``1.0`` means identical directions;
-        ``−1.0`` means opposite.
+        Accepts both normalized embeddings (as returned by :meth:`encode`) and
+        raw unnormalized vectors.  When the encoder is used normally its output
+        is already L2-normalized, so the normalization step below is a no-op;
+        the explicit division guards against callers that pass embeddings from
+        other sources that may not be unit vectors.
+
+        A value of ``1.0`` means identical directions; ``−1.0`` means opposite.
 
         Args:
-            emb_a: ``numpy.ndarray`` embedding returned by :meth:`encode`.
-            emb_b: ``numpy.ndarray`` embedding returned by :meth:`encode`.
+            emb_a: ``numpy.ndarray`` of any shape matching ``emb_b``.
+            emb_b: ``numpy.ndarray`` of any shape matching ``emb_a``.
 
         Returns:
             ``float`` in [−1, 1].
         """
-        # Re-normalize defensively in case the caller passes raw embeddings
         norm_a = np.linalg.norm(emb_a)
         norm_b = np.linalg.norm(emb_b)
         if norm_a < 1e-8 or norm_b < 1e-8:
