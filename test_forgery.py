@@ -3,12 +3,15 @@ import sys
 import os
 import numpy as np
 
-def tester_fausse_signature(signature_path, seuil_fraude=0.45):
+def tester_fausse_signature(signature_path, seuil_fraude=0.15):
     """
     Teste une FAUSSE signature (forgerie)
     Doit détecter :
     1. Que c'est une fraude
     2. Quel client est imité
+
+    Le seuil est une distance cosinus (0 = identique, 2 = opposé).
+    Valeur recommandée : 0.10–0.20 (plus bas = plus strict).
     """
     
     print("="*70)
@@ -60,16 +63,20 @@ def tester_fausse_signature(signature_path, seuil_fraude=0.45):
         print("❌ Erreur d'encodage")
         return
     
-    # Calculer les distances avec TOUS les clients
+    # Calculer les distances cosinus avec TOUS les clients
     distances = []
     
     for client_id, data in base.clients.items():
         empreintes_client = data['empreintes']
         
-        # Distance minimale avec ce client
-        dists = np.linalg.norm(empreintes_client - empreinte_fake, axis=1)
-        dist_min = float(np.min(dists))
-        dist_moy = float(np.mean(dists))
+        # Cosine similarity = dot product for L2-normalized vectors
+        cos_sims = empreintes_client @ empreinte_fake  # shape: (N,)
+        sim_max = float(np.max(cos_sims))
+        sim_moy = float(np.mean(cos_sims))
+        
+        # Cosine distance: 0 = identical, smaller = more similar
+        dist_min = 1.0 - sim_max
+        dist_moy = 1.0 - sim_moy
         
         distances.append({
             'client_id': client_id,
@@ -239,14 +246,18 @@ if __name__ == "__main__":
         print("   python test_forgery.py <fausse_signature> [seuil]")
         print("\n📝 Exemples :")
         print("   python test_forgery.py data/fake/forgeries_6_1.png")
-        print("   python test_forgery.py data/fake/forgeries_6_1.png 0.40")
-        print("   python test_forgery.py data/fake/forgeries_6_1.png 0.50")
+        print("   python test_forgery.py data/fake/forgeries_6_1.png 0.10")
+        print("   python test_forgery.py data/fake/forgeries_6_1.png 0.20")
         print("\n💡 Ce script teste si le système :")
         print("   1. Détecte que c'est une FRAUDE")
         print("   2. Identifie quel client est IMITÉ")
+        print("\n⚙️  Le seuil est une distance cosinus (0=identique) :")
+        print("   • 0.10 : Très strict")
+        print("   • 0.15 : Équilibré (RECOMMANDÉ)")
+        print("   • 0.20 : Permissif")
         sys.exit(1)
     
     signature = sys.argv[1]
-    seuil = float(sys.argv[2]) if len(sys.argv) >= 3 else 0.45
+    seuil = float(sys.argv[2]) if len(sys.argv) >= 3 else 0.15
     
     tester_fausse_signature(signature, seuil)
