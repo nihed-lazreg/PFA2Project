@@ -1,0 +1,10 @@
+# Core ML dependencies
+tensorflow>=2.13,<2.17
+numpy>=1.24
+opencv-python-headless>=4.8
+
+# Streamlit UI
+streamlit>=1.35
+
+# Data display in UI
+pandas>=2.0
