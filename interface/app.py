@@ -385,6 +385,5 @@ elif page == "📊 Database Stats":
     st.json(cfg_data)
 
 
-def main():
-    """Entry-point called when running via ``streamlit run interface/app.py``."""
-    pass  # Streamlit runs the module top-level; this is a no-op placeholder.
+
+

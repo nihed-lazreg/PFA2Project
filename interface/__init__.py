@@ -1,3 +1,1 @@
-from .app import main
-
-__all__ = ["main"]
+# Launch with: streamlit run interface/app.py

@@ -118,12 +118,17 @@ class EmbeddingRepository:
 
     def _save(self) -> None:
         try:
-            # np.savez appends ".npz" automatically; strip the extension to avoid
-            # double-extension issues, then rename back to the desired path.
             stem = str(self._path.with_suffix(""))
             tmp_stem = stem + "_tmp"
             np.savez(tmp_stem, **self._store)
             tmp_path = Path(tmp_stem + ".npz")
-            tmp_path.replace(self._path)
+            try:
+                tmp_path.replace(self._path)
+            except OSError as exc:
+                logger.error("Failed to replace embeddings database with temp file: %s", exc)
+                try:
+                    tmp_path.unlink(missing_ok=True)
+                except OSError:
+                    pass
         except OSError as exc:
             logger.error("Failed to save embeddings database: %s", exc)

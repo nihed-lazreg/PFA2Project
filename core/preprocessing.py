@@ -41,7 +41,7 @@ class ImagePreprocessor:
         if not path.is_file():
             logger.warning("Path is not a file: %s", image_path)
             return None
-        if path.suffix.lower() not in {".png", ".jpg", ".jpeg", ".tif", ".bmp"}:
+        if path.suffix.lower() not in {".png", ".jpg", ".jpeg", ".tif", ".bmp", ".tiff"}:
             logger.warning("Unsupported image format: %s", path.suffix)
             return None
 

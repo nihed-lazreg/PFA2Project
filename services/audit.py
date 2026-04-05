@@ -35,7 +35,7 @@ class AuditLogger:
         event = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "action": action,
-            **details,
+            "details": details,
         }
         try:
             with self._path.open("a", encoding="utf-8") as fh:

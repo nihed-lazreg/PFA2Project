@@ -11,6 +11,9 @@ from services.audit import AuditLogger
 
 logger = logging.getLogger(__name__)
 
+# Maximum possible cosine distance (used as a sentinel for error states)
+_COSINE_DISTANCE_MAX = 2.0
+
 
 @dataclass
 class VerificationResult:
@@ -92,7 +95,7 @@ class VerificationService:
             return VerificationResult(
                 is_authentic=False,
                 client_id=client_id,
-                cosine_distance=2.0,
+                cosine_distance=_COSINE_DISTANCE_MAX,
                 threshold_used=threshold,
                 confidence_pct=0.0,
                 status="ERROR",
@@ -111,7 +114,7 @@ class VerificationService:
             return VerificationResult(
                 is_authentic=False,
                 client_id=client_id,
-                cosine_distance=2.0,
+                cosine_distance=_COSINE_DISTANCE_MAX,
                 threshold_used=threshold,
                 confidence_pct=0.0,
                 status="ERROR",
